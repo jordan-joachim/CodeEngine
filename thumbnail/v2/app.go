@@ -241,12 +241,14 @@ func HandleHTTP(w http.ResponseWriter, r *http.Request) {
 
 		// Assume it wants a file from disk - like main page
 		path := r.URL.Path
-		if strings.Index(path, "..") >= 0 {
-			http.Error(w, "Bad path: "+path, 404)
+		// Strip leading '/' and reject any path traversal or subdirectory access
+		path = path[1:]
+		if strings.Contains(path, "..") || strings.Contains(path, "/") {
+			http.Error(w, "Bad path", 404)
 			return
 		}
 
-		buf, err := os.ReadFile(path[1:]) // strip leading '/'
+		buf, err := os.ReadFile(path)
 		if err != nil {
 			http.Error(w, "Error reading file:"+err.Error(), 404)
 			return
@@ -286,7 +288,6 @@ func main() {
 
 	log.Printf("BUCKET: %s\n", BucketName)
 	log.Printf("JOB_NAME: %s\n", JobName)
-	log.Printf("COS APIKEY: %s\n", apiKey[:5])
 	log.Printf("COS SVCID: %s\n", svcID[:5])
 	log.Printf("HIDE_BUTTON: %v\n", HideButton) // ...
 
